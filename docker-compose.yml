@@ -1,0 +1,85 @@
+# services:
+#   backend:
+#     build:
+#       context: ./healthcare-backend
+#     ports:
+#       - "8000:8000"
+#     volumes:
+#       - ./healthcare-backend:/app
+#     command: python manage.py runserver 0.0.0.0:8000
+#     # depends_on:
+#     #   - mysql-8.0.41  # Liên kết với service MySQL
+#     environment:
+#       - DB_HOST= 192.168.0.103  # Tên service MySQL
+#       - DB_NAME= healthcare_db  # Thay bằng tên database của bạn
+#       - DB_USER= root  # Thay bằng user MySQL
+#       - DB_PASSWORD= root  # Thay bằng password MySQL
+#       - DB_PORT=3306  # Cổng mặc định của MySQL
+
+#   db:
+#       image: mysql:8.0.41-debian  # Sử dụng image MySQL chính thức
+#       environment:
+#         MYSQL_DATABASE: healthcare_db  # Tên database
+#         # MYSQL_USER: root  # User MySQL
+#         # MYSQL_PASSWORD: your_database_password  # Password MySQL
+#         MYSQL_ROOT_PASSWORD: root  # Password cho root
+#       ports:
+#         - "3306:3306"  # Map cổng MySQL ra host (tùy chọn)
+#       volumes:
+#         - mysql_data:/var/lib/mysql  # Lưu trữ dữ liệu MySQL
+#       restart: unless-stopped
+
+#   frontend:
+#     build:
+#       context: ./healthcare-frontend
+#     ports:
+#       - "3000:80"
+
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./healthcare-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./healthcare-backend:/app
+    command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=192.168.0.103
+      - DB_NAME=healthcare_db
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_PORT=3306
+
+  db:
+    image: mysql:8.0.41-debian
+    environment:
+      MYSQL_DATABASE: healthcare_db
+      # MYSQL_USER: root
+      # MYSQL_PASSWORD: your_database_password
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./healthcare-frontend
+    ports:
+      - "3000:80"
+
+volumes:
+  mysql_data:  # Khai báo volume mysql_data
